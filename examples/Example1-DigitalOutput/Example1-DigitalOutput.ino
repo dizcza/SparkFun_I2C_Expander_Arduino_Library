@@ -59,13 +59,13 @@ void loop()
     io.digitalWrite(i, HIGH); // Turn pin HIGH
     Serial.print("GPIO ");
     Serial.print(i);
-    Serial.print(" is now high");
+    Serial.println(" is now high");
     delay(2000);
 
     io.digitalWrite(i, LOW); // Turn pin LOW
     Serial.print("GPIO ");
     Serial.print(i);
-    Serial.print(" is now low");
+    Serial.println(" is now low");
     delay(2000);
   }
 }

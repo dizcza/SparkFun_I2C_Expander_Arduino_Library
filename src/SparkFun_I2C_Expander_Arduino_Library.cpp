@@ -89,6 +89,12 @@ SFE_PCA95XX::SFE_PCA95XX(sfe_pca95xx_devices_e device)
         _deviceType = PCA95XX_PCA9554;
         break;
 
+    case PCA95XX_PCA9555:
+        _deviceAddress = PCA9555_ADDRESS_20;
+        _numberOfGpio = 16;
+        _deviceType = PCA95XX_PCA9555;
+        break;
+
     case PCA95XX_PCA9556:
         _deviceAddress = PCA9556_ADDRESS_18;
         _numberOfGpio = 8;
@@ -138,7 +144,20 @@ PCA95XX_error_t SFE_PCA95XX::pinMode(uint8_t pin, uint8_t mode)
     if (pin >= _numberOfGpio)
         return PCA95XX_ERROR_UNDEFINED;
 
-    err = readI2CRegister(&cfgRegister, PCA95XX_REGISTER_CONFIGURATION);
+    uint8_t registerAddress = PCA95XX_REGISTER_CONFIGURATION; // 0x00 to 0x03
+
+    // On 16-bit devices, input port, output port, polarity, and config registers all have two bytes.
+    if (_deviceType == PCA95XX_PCA9555)
+    {
+        registerAddress *= 2;
+        if (pin > 7)
+        {
+            registerAddress += 1;
+            pin -= 8;
+        }
+    }
+
+    err = readI2CRegister(&cfgRegister, (PCA95XX_REGISTER_t)registerAddress);
     if (err != PCA95XX_ERROR_SUCCESS)
     {
         return err;
@@ -148,7 +167,7 @@ PCA95XX_error_t SFE_PCA95XX::pinMode(uint8_t pin, uint8_t mode)
     {
         cfgRegister |= (1 << pin);
     }
-    return writeI2CRegister(cfgRegister, PCA95XX_REGISTER_CONFIGURATION);
+    return writeI2CRegister(cfgRegister, (PCA95XX_REGISTER_t)registerAddress);
 }
 
 PCA95XX_error_t SFE_PCA95XX::write(uint8_t pin, uint8_t value)
@@ -159,18 +178,32 @@ PCA95XX_error_t SFE_PCA95XX::write(uint8_t pin, uint8_t value)
     if (pin >= _numberOfGpio)
         return PCA95XX_ERROR_UNDEFINED;
 
-    err = readI2CRegister(&outputRegister, PCA95XX_REGISTER_OUTPUT_PORT);
+    uint8_t registerAddress = PCA95XX_REGISTER_OUTPUT_PORT; // 0x00 to 0x03
+
+    // On 16-bit devices, input port, output port, polarity, and config registers all have two bytes.
+    if (_deviceType == PCA95XX_PCA9555)
+    {
+        registerAddress *= 2;
+        if (pin > 7)
+        {
+            registerAddress += 1;
+            pin -= 8;
+        }
+    }
+
+    err = readI2CRegister(&outputRegister, (PCA95XX_REGISTER_t)registerAddress);
     if (err != PCA95XX_ERROR_SUCCESS)
     {
         return err;
     }
+
     // TODO: Break out of here if it's already set correctly
     outputRegister &= ~(1 << pin); // Clear pin bit
     if (value == HIGH)             // Set the bit if it's being set to HIGH (opposite of Arduino)
     {
         outputRegister |= (1 << pin);
     }
-    return writeI2CRegister(outputRegister, PCA95XX_REGISTER_OUTPUT_PORT);
+    return writeI2CRegister(outputRegister, (PCA95XX_REGISTER_t)registerAddress);
 }
 
 PCA95XX_error_t SFE_PCA95XX::digitalWrite(uint8_t pin, uint8_t value)
@@ -184,7 +217,15 @@ PCA95XX_error_t SFE_PCA95XX::getInputRegister(uint8_t *destination)
     PCA95XX_error_t err;
     uint8_t inputRegister = 0;
 
-    err = readI2CRegister(&inputRegister, PCA95XX_REGISTER_INPUT_PORT);
+    uint8_t registerAddress = PCA95XX_REGISTER_INPUT_PORT; // 0x00 to 0x03
+
+    // On 16-bit devices, input port, output port, polarity, and config registers all have two bytes.
+    if (_deviceType == PCA95XX_PCA9555)
+    {
+        registerAddress *= 2;
+    }
+
+    err = readI2CRegister(&inputRegister, (PCA95XX_REGISTER_t)registerAddress);
     if (err != PCA95XX_ERROR_SUCCESS)
         return err;
 
@@ -210,7 +251,20 @@ PCA95XX_error_t SFE_PCA95XX::read(uint8_t *destination, uint8_t pin)
     if (pin >= _numberOfGpio)
         return PCA95XX_ERROR_UNDEFINED;
 
-    err = readI2CRegister(&inputRegister, PCA95XX_REGISTER_INPUT_PORT);
+    uint8_t registerAddress = PCA95XX_REGISTER_INPUT_PORT; // 0x00 to 0x03
+
+    // On 16-bit devices, input port, output port, polarity, and config registers all have two bytes.
+    if (_deviceType == PCA95XX_PCA9555)
+    {
+        registerAddress *= 2;
+        if (pin > 7)
+        {
+            registerAddress += 1;
+            pin -= 8;
+        }
+    }
+
+    err = readI2CRegister(&inputRegister, (PCA95XX_REGISTER_t)registerAddress);
     if (err != PCA95XX_ERROR_SUCCESS)
         return err;
 
@@ -250,18 +304,33 @@ PCA95XX_error_t SFE_PCA95XX::invert(uint8_t pin, PCA95XX_invert_t inversion)
     if (pin >= _numberOfGpio)
         return PCA95XX_ERROR_UNDEFINED;
 
-    err = readI2CRegister(&invertRegister, PCA95XX_REGISTER_POLARITY_INVERSION);
+    uint8_t registerAddress = PCA95XX_REGISTER_POLARITY_INVERSION; // 0x00 to 0x03
+
+    // On 16-bit devices, input port, output port, polarity, and config registers all have two bytes.
+    if (_deviceType == PCA95XX_PCA9555)
+    {
+        registerAddress *= 2;
+        if (pin > 7)
+        {
+            registerAddress += 1;
+            pin -= 8;
+        }
+    }
+
+    err = readI2CRegister(&invertRegister, (PCA95XX_REGISTER_t)registerAddress);
     if (err != PCA95XX_ERROR_SUCCESS)
     {
         return err;
     }
+
     // TODO: Break out of here if it's already set correctly
     invertRegister &= ~(1 << pin);   // Clear pin bit
     if (inversion == PCA95XX_INVERT) // Set the bit if it's being set to inverted
     {
         invertRegister |= (1 << pin);
     }
-    return writeI2CRegister(invertRegister, PCA95XX_REGISTER_POLARITY_INVERSION);
+
+    return writeI2CRegister(invertRegister, (PCA95XX_REGISTER_t)registerAddress);
 }
 
 PCA95XX_error_t SFE_PCA95XX::revert(uint8_t pin)

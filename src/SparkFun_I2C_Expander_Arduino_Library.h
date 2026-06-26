@@ -165,6 +165,12 @@ public:
   PCA95XX_error_t read(uint8_t *destination, uint8_t pin);
   uint8_t read(uint8_t pin); // May return erroneous data if read fails
 
+  // read first 8 pins and store to destination
+  PCA95XX_error_t read8(uint8_t *destination);
+
+  // read first 16 pins (available on 16-bit devices only)
+  PCA95XX_error_t read16(uint16_t *destination);
+
   PCA95XX_error_t digitalRead(uint8_t *destination, uint8_t pin);
   uint8_t digitalRead(uint8_t pin); // May return erroneous data if read fails
 

@@ -242,6 +242,35 @@ uint8_t SFE_PCA95XX::getInputRegister()
     return 0; // Unsafe
 }
 
+
+// read first 8 pins and store to destination
+PCA95XX_error_t SFE_PCA95XX::read8(uint8_t *destination) {
+    uint8_t registerAddress = PCA95XX_REGISTER_INPUT_PORT; // 0x00 to 0x03
+
+    // On 16-bit devices, input port, output port, polarity, and config registers all have two bytes.
+    if (_deviceType == PCA95XX_PCA9555)
+    {
+        registerAddress *= 2;
+    }
+    return readI2CRegister(destination, (PCA95XX_REGISTER_t) registerAddress);
+}
+
+
+// read first 16 pins (available on 16-bit devices only)
+PCA95XX_error_t SFE_PCA95XX::read16(uint16_t *destination) {
+    if (_deviceType != PCA95XX_PCA9555) {
+        // Read first 8 bits only
+        uint8_t destU8 = 0;
+        PCA95XX_error_t err = read8(&destU8);
+        *destination = destU8;
+        return err;
+    }
+    // Need to check the correctness
+    uint8_t registerAddress = 2 * (uint8_t) PCA95XX_REGISTER_INPUT_PORT;
+    return readI2CBuffer((uint8_t*) destination, (PCA95XX_REGISTER_t) registerAddress, 2);
+}
+
+
 // Safe reading of a pin
 PCA95XX_error_t SFE_PCA95XX::read(uint8_t *destination, uint8_t pin)
 {
